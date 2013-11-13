@@ -127,6 +127,7 @@ then
    errormessage="ERROR: Backup is currently running, start time $(cat $DEST_PATH/$RUNFILE)"
    echo "$errormessage" >/dev/stderr		
    if [ -n "$ERROR_MAIL" ]
+   then
 	echo "$errormessage" | "$MAILCOMMAND" "$ERROR_SUBJECT" "$ERROR_MAIL"
    fi
    exit
