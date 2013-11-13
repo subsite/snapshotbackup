@@ -128,7 +128,7 @@ then
    echo "$errormessage" >/dev/stderr		
    if [ -n "$ERROR_MAIL" ]
    then
-	echo "$errormessage" | "$MAILCOMMAND" "$ERROR_SUBJECT" "$ERROR_MAIL"
+	echo "$errormessage" | $MAILCOMMAND "$ERROR_SUBJECT" "$ERROR_MAIL"
    fi
    exit
 else
