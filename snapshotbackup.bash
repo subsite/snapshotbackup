@@ -35,7 +35,8 @@
 # Pull backup setup example: 
 # - Do sudo passwd backup on client 
 # - Add /var/backups/.ssh (chowned backup) on client and server
-# - As 'backup' on server, do ssh-keygen, ssh-copy-id backup@client
+# - As 'backup' on server, do ssh-keygen, ssh-copy-id backup@client 
+#   (You might need to do the same for root@server to backup@client as well) 
 # - Run pull backup as root, source dirs eg. backup@client:/var/www
 # - Add backup server to hosts.allow if you get strange errors (denyhosts running?)
 #
@@ -62,7 +63,7 @@ INFO_FILE="backup_info.txt"
 # Arguments to rsync 
 # -a equals -rlptgoD. 
 #
-RSYNC_ARGS="-rRlptgoD"
+RSYNC_ARGS="-a"
 
 # Backup permissions to separate file, "yes" or "no". This should not be needed on most systems.
 # This file may be large and will take up space in each snapshot. 
@@ -70,14 +71,17 @@ RSYNC_ARGS="-rRlptgoD"
 #
 BACKUP_PERMISSIONS="no"
 
+# Logfile
+LOGFILE="/var/log/snapshotbackup.log"
+
 #
 # ------ END OF CONF SECTION ------
 
 
 
 ## Main code section
-started=`date "+%d.%m.%Y %H:%M:%S"`
-
+started=`date "+%Y-%m-%d %H:%M:%S"`
+echo `date "+%Y-%m-%d %H:%M:%S"` " LAUNCH" >> $LOGFILE
 # Check arguments
 if [ -n "$1" ]
 then
@@ -109,7 +113,8 @@ then
 	
 	# Get destination from last argument
 	DEST_PATH=${@:$#}
-	
+	# Strip tailing slash if there
+	DEST_PATH=${DEST_PATH%/}
 fi
 
 # Make sure destination path exists
@@ -124,15 +129,15 @@ RUNFILE="SNAPSHOTBACKUP_IS_RUNNING"
 
 if [ -f "$DEST_PATH/$RUNFILE" ];
 then
-   errormessage="ERROR: Backup is currently running, start time $(cat $DEST_PATH/$RUNFILE)"
-   echo "$errormessage" >/dev/stderr		
-   if [ -n "$ERROR_MAIL" ]
-   then
-	echo "$errormessage" | $MAILCOMMAND "$ERROR_SUBJECT" "$ERROR_MAIL"
-   fi
-   exit
+	errormessage="ERROR: Backup is currently running, start time $(cat $DEST_PATH/$RUNFILE)"
+	echo `date "+%Y-%m-%d %H:%M:%S"` "$errormessage $DEST_PATH"
+	if [ -n "$ERROR_MAIL" ]
+	then
+		echo "$errormessage" | $MAILCOMMAND "$ERROR_SUBJECT" "$ERROR_MAIL"
+	fi
+	exit
 else
-   echo `date "+%d.%m.%Y %H:%M:%S"` > $DEST_PATH/$RUNFILE
+	echo `date "+%Y-%m-%d %H:%M:%S"` > $DEST_PATH/$RUNFILE
 fi
 
 ## Get source size (1.2 doesn't work with pull)
@@ -159,8 +164,8 @@ then
 fi
 
 # Dir check done, start main tasks
-
 echo -e "Backup started\nSOURCES:$SOURCE_PATHS\nDESTINATION:$DEST_PATH\n$SNAPSHOT_COUNT versions kept"
+echo `date "+%Y-%m-%d %H:%M:%S"` " Backup STARTED SOURCES:$SOURCE_PATHS DESTINATION:$DEST_PATH $SNAPSHOT_COUNT versions kept" >> $LOGFILE
 if [ "$BACKUP_PERMISSIONS" = "yes" ]
 then
 	echo "Permissions will be saved to backup_permissions.acl"
@@ -179,12 +184,13 @@ done
 
 # Rsync source to snapshot.0, creating hardlinks 
 echo "rsync $RSYNC_ARGS --delete --link-dest=../snapshot.1 $SOURCE_PATHS  $DEST_PATH/snapshot.0/"
+echo `date "+%Y-%m-%d %H:%M:%S"` "rsync $RSYNC_ARGS --delete --link-dest=../snapshot.1 $SOURCE_PATHS  $DEST_PATH/snapshot.0/"
 eval rsync $RSYNC_ARGS --delete --link-dest=../snapshot.1 $SOURCE_PATHS  $DEST_PATH/snapshot.0/
 
 
 # Write info
 echo "Backup started at $started" > $DEST_PATH/snapshot.0/$INFO_FILE
-echo "Backup completed at " `date "+%d.%m.%Y %H:%M:%S"` >> $DEST_PATH/snapshot.0/$INFO_FILE
+echo "Backup completed at " `date "+%Y-%m-%d %H:%M:%S"` >> $DEST_PATH/snapshot.0/$INFO_FILE
 echo "Backup Sources: $SOURCE_PATHS" >> $DEST_PATH/snapshot.0/$INFO_FILE
 #echo "Size of source dirs:" >> $DEST_PATH/snapshot.0/$INFO_FILE
 #echo $source_size >> $DEST_PATH/snapshot.0/$INFO_FILE
@@ -210,3 +216,4 @@ then
 fi
 
 echo "Backup completed."
+echo `date "+%Y-%m-%d %H:%M:%S"` "Backup to $DEST_PATH COMPLETED" >> $LOGFILE
