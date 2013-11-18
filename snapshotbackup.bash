@@ -1,47 +1,16 @@
 #!/bin/bash
 #
-# Snapshot backup script by Fredrik Welander 2013. 
-# This script uses hardlinks to create time freezed incremental backups. It works in both 
-# push and pull modes, but pull is faster and more secure and thus recommended.
+# Snapshot backup script by Fredrik Welander 2013. More info in README.md
 # 
-# Version 1.0 Jan 2013
-# Version 1.1 Feb 2013 (runfile added)
-# Version 1.2 Nov 2013 (pull backup)
+# DISCLAIMER: This program may not work as espected and it may destroy your data.
+# It may stop working unexpectedly or create useless backups. It may be a security risk.
+# Read and understand the code, test in a safe environment, check your backups from time to time.
+# USE AT YOUR OWN RISK.
 #
-#  DISCLAIMER! 
-#    This program may not work as espected and it may destroy your data. 
-#    It may destroy other users' data or system files too when run as root.
-#    Read and understand the code, test in a safe environment and USE AT YOUR OWN RISK.
+# Syntax:
+# snapshotbackup.bash [--snapshots NUMBER] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
 #
-# Syntax:   snapshotbackup [--snapshots NUMBER] SOURCE_PATHS DEST_PATH
-#
-# Example 1, make snapshots of three directories keeping the default number of copies (see SNAPSHOT_COUNT below): 
-#           snapshotbackup backup@client:/etc backup@client:/home/user /mnt/backup_drive
-#
-# Example 2, make snapshots of /var/www keeping 30 copies: 
-#           snapshotbackup --snapshots 30 /var/www /var/www_backup
-#
-# Notes:
-# - Run as root (with caution) to preserve file ownership and avoid permission errors. 
-#    Remember that permission protected files might not be safe on the backup drive
-# - Use double quotes around source dirs with spaces. Destination path cannot contain spaces.
-# - Destination path must be local (or locally mounted), sorces local or ssh (user@client:/dir/dir)
-# - Backup destination must be a Linux type filesystem, forget FAT/NTFS drives.
-# - Dependencies: rsync, getfacl
-# - Tested on Ubuntu 12.10 with rsync 3.0.9
-# - Pull backup with a dedicated backup-user is recommended for security
-# - Thanks to: http://www.mikerubel.org/computers/rsync_snapshots/
-#
-# Pull backup setup example: 
-# - Do sudo passwd backup on client 
-# - Add /var/backups/.ssh (chowned backup) on client and server
-# - As 'backup' on server, do ssh-keygen, ssh-copy-id backup@client 
-#   (You might need to do the same for root@server to backup@client as well) 
-# - Run pull backup as root, source dirs eg. backup@client:/var/www
-# - Add backup server to hosts.allow if you get strange errors (denyhosts running?)
-#
-#
-# ------- CONF SECTION -------- 
+# ------- CONF SECTION --------
 #
 # Default number of snapshots kept when run without --snapshots argument.
 #
@@ -71,7 +40,7 @@ RSYNC_ARGS="-a"
 #
 BACKUP_PERMISSIONS="no"
 
-# Logfile
+# Logfile, make sure it's writable by the user running the script
 LOGFILE="/var/log/snapshotbackup.log"
 
 #
@@ -80,8 +49,9 @@ LOGFILE="/var/log/snapshotbackup.log"
 
 
 ## Main code section
+#
 started=`date "+%Y-%m-%d %H:%M:%S"`
-echo `date "+%Y-%m-%d %H:%M:%S"` " LAUNCH" >> $LOGFILE
+echo `date "+%Y-%m-%d %H:%M:%S"` "LAUNCH" >> $LOGFILE
 # Check arguments
 if [ -n "$1" ]
 then
@@ -92,7 +62,7 @@ then
 		SNAPSHOT_COUNT=$2
 		first_patharg=3
 	fi
-	
+
 	# Get source paths from arguments
 	SOURCE_PATHS=""
 	for current_dir in "${@:first_patharg:$# - first_patharg}"
@@ -100,7 +70,7 @@ then
 		current_dir=${current_dir%/} # Strip tailing slash
 		current_dir=${current_dir// /'\ '} # Escape spaces in path
 		if [ -d "$current_dir" ]
-		then   			
+		then
 			SOURCE_PATHS="$SOURCE_PATHS $current_dir"
 		elif [[ "$current_dir" == *\:* ]]
 		then
@@ -110,7 +80,7 @@ then
 			echo "WARNING: Source directory \"$current_dir\" not found, directory ignored."
 		fi
 	done
-	
+
 	# Get destination from last argument
 	DEST_PATH=${@:$#}
 	# Strip tailing slash if there
@@ -165,7 +135,7 @@ fi
 
 # Dir check done, start main tasks
 echo -e "Backup started\nSOURCES:$SOURCE_PATHS\nDESTINATION:$DEST_PATH\n$SNAPSHOT_COUNT versions kept"
-echo `date "+%Y-%m-%d %H:%M:%S"` " Backup STARTED SOURCES:$SOURCE_PATHS DESTINATION:$DEST_PATH $SNAPSHOT_COUNT versions kept" >> $LOGFILE
+echo `date "+%Y-%m-%d %H:%M:%S"` "Backup STARTED SOURCES:$SOURCE_PATHS DESTINATION:$DEST_PATH $SNAPSHOT_COUNT versions kept" >> $LOGFILE
 if [ "$BACKUP_PERMISSIONS" = "yes" ]
 then
 	echo "Permissions will be saved to backup_permissions.acl"
