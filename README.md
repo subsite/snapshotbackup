@@ -7,17 +7,20 @@ backing up multiple sources with maximum diskspace and bandwidth efficiency. Run
 
 
 **DISCLAIMER:**
-This program may not work as espected and it may destroy your data.
-It may destroy other users' data or system files too when run as root.
-Read and understand the code, test in a safe environment and USE AT YOUR OWN RISK.
+This program may not work as espected and it may destroy your data. It may stop working unexpectedly or create useless backups. It may be a security risk.
+Read and understand the code, test in a safe environment, check your backups from time to time. USE AT YOUR OWN RISK.
 
-Syntax: **snapshotbackup [--snapshots NUMBER] SOURCE_PATH [SOURCE_PATH ...] DEST_PATH**
+Syntax: 
+    **snapshotbackup.bash [--snapshots NUMBER] SOURCE_PATH [SOURCE_PATH ...] DEST_PATH**
 
 Example 1, make snapshots of three directories keeping the default number of copies (SNAPSHOT_COUNT in conf section):
-snapshotbackup backup@client:/etc backup@client:/home/user /mnt/backup_drive
+    snapshotbackup.bash backup@client:/etc backup@client:/home/user /mnt/backup_drive
 
 Example 2, make snapshots of /var/www keeping 30 copies:
-snapshotbackup --snapshots 30 /var/www /var/www_backup
+    snapshotbackup.bash --snapshots 30 /var/www /var/www_backup
+
+Example 3, sample pull backup in /etc/cron.d
+    30 1 * * * root /usr/local/sbin/snapshotbackup.bash --snapshots 14 backup@client:/etc backup@client:/home/user /mnt/backup_drive/client/daily
 
 Notes:
 - Run as root (with caution) to preserve file ownership and avoid permission errors, but protect your backup drive.
