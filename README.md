@@ -13,6 +13,18 @@ Read and understand the code, test in a safe environment, check your backups fro
 **Syntax:**
 
     snapshotbackup.bash [--snapshots NUMBER] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
+    
+**Installation:** 
+
+    cd /usr/local/sbin
+    sudo wget https://raw.github.com/fredrikwelander/snapshotbackup/master/snapshotbackup.bash
+    sudo chmod 755 snapshotbackup.bash
+
+**Dependencies (standard shell commands not listed):**
+- rsync
+- sshfs (if you neeed push backup)
+- /usr/bin/mail (if you want error reporting by mail)
+- getfacl (if you need to backup permissions separately)
 
 **Notes:**
 - Run script as root to preserve file ownership and avoid permission errors, but protect your backup drive.
