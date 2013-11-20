@@ -33,6 +33,7 @@ Read and understand the code, test in a safe environment, check your backups fro
 - Destination path must be on a locally mounted device.
 - Backup destination must be a Linux type filesystem for the hardlinks to work, forget FAT/NTFS drives.
 - SSHFS-mounts can be slow.
+- SnapshotBackup has limited error handling. Killing a running script might make a mess.
 
 **Security:**
 - Make sure the backups are protected even if your main user account is compromised, restrict sudo access and use unique passwords for sudoers.
