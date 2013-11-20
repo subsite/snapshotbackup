@@ -29,7 +29,8 @@ Read and understand the code, test in a safe environment, check your backups fro
 **Notes:**
 - Run script as root to preserve file ownership and avoid permission errors, but protect your backup drive.
 - Use double quotes around source dirs with spaces. Destination path cannot contain spaces.
-- Destination path must be local (or locally mounted), source paths can be remote (user@client:/dir/dir) or local
+- Source paths can be remote (user@client:/dir/dir) or local, but you cannot mix. All sources must be on the same host.
+- Destination path must be on a locally mounted device.
 - Backup destination must be a Linux type filesystem for the hardlinks to work, forget FAT/NTFS drives.
 - SSHFS-mounts can be slow.
 
@@ -42,9 +43,9 @@ Read and understand the code, test in a safe environment, check your backups fro
 
 **Sample pull backup setup:**
 - Create a dedicated backup user or set a password for user 'backup' if it already exists. You can use a long randomly generated password and forget it after uploading the key. 
-- Make sure the backup user can log in using ssh key authentication (do ssh-keygen, ssh-copy-id backup@client, etc)
-- You might need to ssh-keygen for root@server and ssh-copy-id to backup@client as well
-- Set up the backup command to run in cron (as root)
+- Make sure the backup user can log in using ssh key authentication (do ssh-keygen, ssh-copy-id backup@client, etc).
+- You might need to ssh-keygen for root@server and ssh-copy-id to backup@client as well.
+- Set up the backup command to run in cron (as root).
 
 **Examples**
 
