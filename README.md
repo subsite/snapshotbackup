@@ -1,4 +1,4 @@
-SnapshotBackup by Fredrik Welander 2013.
+SnapshotBackup by Fredrik Welander
 --------
 http://www.subsite.fi/pages/in-english/subsite.php
 
