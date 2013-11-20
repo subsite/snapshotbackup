@@ -17,6 +17,7 @@
 SNAPSHOT_COUNT=10
 
 # Email address for errors, assign directly or read from file. Comment out either, or both if you don't want any mails.
+# Sends the following errors: "Missing destination", "Backup currently running" and "Diskspace warning".
 # Depends on mailutils 'mail'
 # 
 # ERROR_MAIL='john.doe@mail.com'
@@ -36,12 +37,18 @@ RSYNC_ARGS="-a"
 
 # Backup permissions to separate file, "yes" or "no". This should not be needed on most systems.
 # This file may be large and will take up space in each snapshot. 
-# This will only work if source is locally mounted.
+# This will only work if source is locally mounted and getfacl is installed
 #
 BACKUP_PERMISSIONS="no"
 
 # Logfile, make sure it's writable by the user running the script
 LOGFILE="/var/log/snapshotbackup.log"
+
+# Set error level for less free space on destination than total source size
+# "ERROR" aborts the script, "WARNING" only writes log and sends mail
+# Note that the backup might still complete if there is enough space for the current snapshot. 
+#
+SPACE_ERRORLEVEL="WARNING"
 
 #
 # ------ END OF CONF SECTION ------
@@ -50,49 +57,104 @@ LOGFILE="/var/log/snapshotbackup.log"
 
 ## Main code section
 #
+
+# Check basic syntax
+if [ $# -lt 2 ]
+then
+	echo "USAGE: snapshotbackup.bash [--snapshots NUMBER] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH"
+	exit
+fi
+
 started=`date "+%Y-%m-%d %H:%M:%S"`
 echo `date "+%Y-%m-%d %H:%M:%S"` "LAUNCH" >> $LOGFILE
+
 # Check arguments
-if [ -n "$1" ]
+first_patharg=1
+if [ "$1" = "--snapshots" ]
 then
-	# Check arguments for --snapshots NUMBER
-	first_patharg=1
-	if [ "$1" = "--snapshots" ]
-	then
-		SNAPSHOT_COUNT=$2
-		first_patharg=3
-	fi
-
-	# Get source paths from arguments
-	SOURCE_PATHS=""
-	for current_dir in "${@:first_patharg:$# - first_patharg}"
-	do
-		current_dir=${current_dir%/} # Strip tailing slash
-		current_dir=${current_dir// /'\ '} # Escape spaces in path
-		if [ -d "$current_dir" ]
-		then
-			SOURCE_PATHS="$SOURCE_PATHS $current_dir"
-		elif [[ "$current_dir" == *\:* ]]
-		then
-			SOURCE_PATHS="$SOURCE_PATHS $current_dir"
-			echo "Source \"$current_dir\" is remote."
-		else
-			echo "WARNING: Source directory \"$current_dir\" not found, directory ignored."
-		fi
-	done
-
-	# Get destination from last argument
-	DEST_PATH=${@:$#}
-	# Strip tailing slash if there
-	DEST_PATH=${DEST_PATH%/}
+	SNAPSHOT_COUNT=$2
+	first_patharg=3
 fi
+
+# Get source paths from arguments
+SOURCE_PATHS=""
+SOURCE_SIZE="0"
+for current_dir in "${@:first_patharg:$# - first_patharg}"
+do
+	remote_prefix=""
+	current_dir=${current_dir%/} # Strip tailing slash
+	current_dir=${current_dir// /'\ '} # Escape spaces in path
+	if [ -d "$current_dir" ]
+	then
+		# calculate current source size
+		cur_size=`du -sk "$current_dir" 2>/dev/null |awk '{print $1}'`
+		SOURCE_PATHS="$SOURCE_PATHS $current_dir"
+	elif [[ "$current_dir" == *\:* ]]
+	then
+		SOURCE_PATHS="$SOURCE_PATHS $current_dir"
+		remote_host=${current_dir%:*}
+		current_path=${current_dir#*:}
+		# calculate current source size
+		cur_size=`ssh $remote_host du -sk "$current_path" 2>/dev/null |awk '{print $1}'`
+		echo "Source \"$current_dir\" is remote"
+	else
+		echo "WARNING: Source directory \"$current_dir\" not found, directory ignored."
+	fi
+	
+	# calculate total source size
+	SOURCE_SIZE=`echo $SOURCE_SIZE + $cur_size | bc`		
+done
+
+# make total source size human readable
+SOURCE_HUMANSIZE="${SOURCE_SIZE}K"
+if [ "$SOURCE_SIZE" -gt 1048576 ]
+then
+	SOURCE_HUMANSIZE="`echo $SOURCE_SIZE / 1048576 | bc`G"
+elif [ "$SOURCE_SIZE" -gt 1024 ]
+then
+	SOURCE_HUMANSIZE="`echo $SOURCE_SIZE / 1024 | bc`M"
+fi
+echo "Total size of sources: $SOURCE_HUMANSIZE"
+
+# Get destination from last argument
+DEST_PATH=${@:$#}
+# Strip tailing slash if there
+DEST_PATH=${DEST_PATH%/}
+
 
 # Make sure destination path exists
 if [ ! -d "$DEST_PATH" ]
 then
-	echo "ERROR: Destination path $DEST_PATH not found."
+	errormessage="ERROR: Destination path $DEST_PATH not found. Is it mounted?"
+	echo "$errormessage"
+    echo `date "+%Y-%m-%d %H:%M:%S"` "$errormessage" >> $LOGFILE
+    if [ -n "$ERROR_MAIL" ]
+    then
+		echo "$errormessage" | $MAILCOMMAND "$ERROR_SUBJECT" "$ERROR_MAIL"
+    fi
+	echo "                    Backup ABORTED" >> $LOGFILE
 	exit
 fi
+
+# Make sure destination has enough space
+DEST_FREE=`df -kP "$DEST_PATH" |grep "/" |awk '{print $4}'`
+DEST_FREE_H=`df -kPh "$DEST_PATH" |grep "/" |awk '{print $4}'`
+if [ "$DEST_FREE" -lt "$SOURCE_SIZE" ]
+then
+	errormessage="$SPACE_ERRORLEVEL: $DEST_FREE_H free diskspcace on $DEST_PATH. Total source size $SOURCE_HUMANSIZE."
+	echo "$errormessage"
+    echo `date "+%Y-%m-%d %H:%M:%S"` "$errormessage" >> $LOGFILE
+    if [ -n "$ERROR_MAIL" ]
+    then
+    	echo "$errormessage" | $MAILCOMMAND "$ERROR_SUBJECT" "$ERROR_MAIL"
+    fi
+	if [ "$SPACE_ERRORLEVEL" = "ERROR" ]
+	then
+		echo "                    Backup ABORTED" >> $LOGFILE
+		exit	
+	fi
+fi
+
 
 RUNFILE="SNAPSHOTBACKUP_IS_RUNNING"
 
@@ -100,11 +162,13 @@ RUNFILE="SNAPSHOTBACKUP_IS_RUNNING"
 if [ -f "$DEST_PATH/$RUNFILE" ];
 then
 	errormessage="ERROR: Backup is currently running, start time $(cat $DEST_PATH/$RUNFILE)"
-	echo `date "+%Y-%m-%d %H:%M:%S"` "$errormessage $DEST_PATH"
+	echo "$errormessage"
+	echo `date "+%Y-%m-%d %H:%M:%S"` "$errormessage $DEST_PATH" >> $LOGFILE
 	if [ -n "$ERROR_MAIL" ]
 	then
 		echo "$errormessage" | $MAILCOMMAND "$ERROR_SUBJECT" "$ERROR_MAIL"
 	fi
+	echo "                    Backup ABORTED" >> $LOGFILE
 	exit
 else
 	echo `date "+%Y-%m-%d %H:%M:%S"` > $DEST_PATH/$RUNFILE
@@ -135,7 +199,9 @@ fi
 
 # Dir check done, start main tasks
 echo -e "Backup started\nSOURCES:$SOURCE_PATHS\nDESTINATION:$DEST_PATH\n$SNAPSHOT_COUNT versions kept"
-echo `date "+%Y-%m-%d %H:%M:%S"` "Backup STARTED SOURCES:$SOURCE_PATHS DESTINATION:$DEST_PATH $SNAPSHOT_COUNT versions kept" >> $LOGFILE
+echo `date "+%Y-%m-%d %H:%M:%S"` "Backup STARTED to $DEST_PATH keeping $SNAPSHOT_COUNT snapshots" >> $LOGFILE
+echo "                    Sources: $SOURCE_PATHS" >> $LOGFILE
+echo "                    Total source size: $SOURCE_HUMANSIZE, Space on destination: $DEST_FREE_H"  >> $LOGFILE
 if [ "$BACKUP_PERMISSIONS" = "yes" ]
 then
 	echo "Permissions will be saved to backup_permissions.acl"
@@ -155,13 +221,14 @@ done
 # Rsync source to snapshot.0, creating hardlinks 
 echo "rsync $RSYNC_ARGS --delete --link-dest=../snapshot.1 $SOURCE_PATHS  $DEST_PATH/snapshot.0/"
 echo `date "+%Y-%m-%d %H:%M:%S"` "rsync $RSYNC_ARGS --delete --link-dest=../snapshot.1 $SOURCE_PATHS  $DEST_PATH/snapshot.0/"
-eval rsync $RSYNC_ARGS --delete --link-dest=../snapshot.1 $SOURCE_PATHS  $DEST_PATH/snapshot.0/
+eval rsync $RSYNC_ARGS --delete --link-dest=../snapshot.1 $SOURCE_PATHS  $DEST_PATH/snapshot.0/ 
 
 
 # Write info
 echo "Backup started at $started" > $DEST_PATH/snapshot.0/$INFO_FILE
 echo "Backup completed at " `date "+%Y-%m-%d %H:%M:%S"` >> $DEST_PATH/snapshot.0/$INFO_FILE
-echo "Backup Sources: $SOURCE_PATHS" >> $DEST_PATH/snapshot.0/$INFO_FILE
+echo "Backup sources: $SOURCE_PATHS" >> $DEST_PATH/snapshot.0/$INFO_FILE
+echo "Total size of sources: $SOURCE_HUMANSIZE, space on destination: $DEST_FREE_H" >> $DEST_PATH/snapshot.0/$INFO_FILE
 #echo "Size of source dirs:" >> $DEST_PATH/snapshot.0/$INFO_FILE
 #echo $source_size >> $DEST_PATH/snapshot.0/$INFO_FILE
 
