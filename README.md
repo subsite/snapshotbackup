@@ -19,6 +19,10 @@ Read and understand the code, test in a safe environment, check your backups fro
     cd /usr/local/sbin
     sudo wget https://raw.github.com/fredrikwelander/snapshotbackup/master/snapshotbackup.bash
     sudo chmod 755 snapshotbackup.bash
+    
+Optional step, if you want error reporting and don't want to put your email into the script file:
+    
+    sudo echo "your.email@mailprovider.com" > /etc/scriptmail.txt
 
 **Dependencies (standard shell commands not listed):**
 - rsync
@@ -62,6 +66,12 @@ Read and understand the code, test in a safe environment, check your backups fro
 
     30 1 * * * root /usr/local/sbin/snapshotbackup.bash --snapshots 14 backup@client:/etc backup@client:/home/user /mnt/backup_drive/client/daily
 
-Tip: Check out my diskspace script on https://github.com/fredrikwelander/misc-scripts and run it on the backup server to get an email if the server is about to run out of space
+**Tips** 
+
+- SnapshotBackup has basic diskspace reporting, but you can also use my diskspace script on https://github.com/fredrikwelander/misc-scripts and run it on the backup server to get an email if the server is about to run out of space
+- Want to know which files were updated in the latest snapshot? On the server, do:
+
+        cd /path/to/backup/destination
+        find snapshot.0/* -newer snapshot.1 -exec ls {} \; 
 
 Thanks to: http://www.mikerubel.org/computers/rsync_snapshots/
