@@ -1,11 +1,27 @@
 #!/bin/bash
 #
-# Snapshot backup script by Fredrik Welander 2013. More info in README.md
-# 
+# SnapshotBackup 
+# GPL v3. Copyright Fredrik Welander 2013. 
+#
+#    This program is free software: you can redistribute it and/or modify
+#  	 it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 # DISCLAIMER: This program may not work as espected and it may destroy your data.
 # It may stop working unexpectedly or create useless backups. It may be a security risk.
 # Read and understand the code, test in a safe environment, check your backups from time to time.
 # USE AT YOUR OWN RISK.
+#
+# More info in README.md
 #
 # Syntax:
 # snapshotbackup.bash [--snapshots NUMBER] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
