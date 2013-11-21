@@ -1,14 +1,30 @@
 SnapshotBackup by Fredrik Welander
 --------
-http://www.subsite.fi/pages/in-english/subsite.php
 
 This script uses hardlinks to create time freezed incremental backups. It is a reliable solution for automatically 
-backing up multiple sources with maximum diskspace and bandwidth efficiency. Run with cron for best result.
+backing up multiple sources with maximum diskspace and bandwidth efficiency. 
 
 
 **DISCLAIMER:**
 This program may not work as espected and it may destroy your data. It may stop working unexpectedly or create useless backups. It may be a security risk.
 Read and understand the code, test in a safe environment, check your backups from time to time. USE AT YOUR OWN RISK.
+
+**COPYRIGHT:**
+SnapshotBackup is released under GPL v3. Copyright Fredrik Welander 2013
+
+
+**Features**
+- Changes are backed up in time freezed snapshots using rsync and cp
+- Only changes are backed up which saves both diskspace and bandwidth
+- Runs in cron, so you can schedule your backups any way you like
+- Works with both local and remote sources
+- The number of kept snapshots is freely configurable
+- Has (optional) error reporting via email, reported errors include missing destination, backup already running and insufficient diskspace
+- Keeps its own logfile and also saves a more detailed info file for each snapshot
+- Keeps track of the backup drive's diskspace and the size of the backup sources
+- Can (optionally) send an info email when the backup run is completed
+- Preserves file ownership and permissions, but you can (optionally) also save the permissions to a separate file
+
 
 **Syntax:**
 
@@ -66,12 +82,6 @@ Optional step, if you want error reporting and don't want to put your email into
 
     30 1 * * * root /usr/local/sbin/snapshotbackup.bash --snapshots 14 backup@client:/etc backup@client:/home/user /mnt/backup_drive/client/daily
 
-**Tips** 
+*Homepage of the author: http://www.subsite.fi/pages/in-english/subsite.php*
 
-- SnapshotBackup has basic diskspace reporting, but you can also use my diskspace script on https://github.com/fredrikwelander/misc-scripts and run it on the backup server to get an email if the server is about to run out of space
-- Want to know which files were updated in the latest snapshot? On the server, do:
-
-        cd /path/to/backup/destination
-        find snapshot.0/* -newer snapshot.1 -exec ls {} \; 
-
-Thanks to: http://www.mikerubel.org/computers/rsync_snapshots/
+*Thanks to: http://www.mikerubel.org/computers/rsync_snapshots/*
