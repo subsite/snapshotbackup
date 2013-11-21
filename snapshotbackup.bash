@@ -24,11 +24,20 @@ SNAPSHOT_COUNT=10
 ERROR_MAIL=`cat /etc/scriptmail.txt`
 
 MAILCOMMAND='/usr/bin/mail -s' 
+
 ERROR_SUBJECT="Error in snapshotbackup"
+
+# Send email when backup completes "yes" or "no"
+#
+MAIL_ON_COMPLETE="yes"
 
 # Name of small info file created in DEST_PATH after completed backup
 #
 INFO_FILE="backup_info.txt"
+
+# Include a list of the directories which contain changed files since the last snapshot
+#
+SHOW_CHANGED_DIRS="yes"
 
 # Arguments to rsync 
 # -a equals -rlptgoD. 
@@ -58,6 +67,40 @@ SPACE_ERRORLEVEL="WARNING"
 ## Main code section
 #
 
+# function to write log
+function writelog () {
+	# usage: writelog "logmessage" [notime]
+	if [ "$2" = "notime" ]
+	then
+		echo "                    $1" >> $LOGFILE
+	else
+		echo `date "+%Y-%m-%d %H:%M:%S"` "$1" >> $LOGFILE
+	fi
+}
+
+# function to send email
+function mailer () {
+	# usage: mailer "mailsubject" "mailmessage"
+    if [ -n "$ERROR_MAIL" ]
+    then
+		HOST=`hostname -f`
+		echo "$2" | $MAILCOMMAND "$1 $HOST" "$ERROR_MAIL"
+    fi
+}
+
+# function to exit on error
+function errorexit () {
+	# usage: errorexit "errormessage" [mail]
+	echo "ERROR $errormessage"
+	if [ "$2" = "mail" ]
+	then
+		mailer "$ERROR_SUBJECT" "$errormessage"
+	fi
+	writelog "Backup ABORTED with ERROR $errormessage" 
+	exit
+		
+}
+
 # Check basic syntax
 if [ $# -lt 2 ]
 then
@@ -66,7 +109,7 @@ then
 fi
 
 started=`date "+%Y-%m-%d %H:%M:%S"`
-echo `date "+%Y-%m-%d %H:%M:%S"` "LAUNCH" >> $LOGFILE
+writelog "LAUNCH" 
 
 # Check arguments
 first_patharg=1
@@ -118,22 +161,15 @@ echo "Total size of sources: $SOURCE_HUMANSIZE"
 
 # Get destination from last argument
 DEST_PATH=${@:$#}
+
 # Strip tailing slash if there
 DEST_PATH=${DEST_PATH%/}
-
 
 # Make sure destination path exists
 if [ ! -d "$DEST_PATH" ]
 then
-	errormessage="ERROR: Destination path $DEST_PATH not found. Is it mounted?"
-	echo "$errormessage"
-    echo `date "+%Y-%m-%d %H:%M:%S"` "$errormessage" >> $LOGFILE
-    if [ -n "$ERROR_MAIL" ]
-    then
-		echo "$errormessage" | $MAILCOMMAND "$ERROR_SUBJECT" "$ERROR_MAIL"
-    fi
-	echo "                    Backup ABORTED" >> $LOGFILE
-	exit
+	errormessage="Destination path $DEST_PATH not found. Is it mounted?"
+	errorexit "$errormessage" mail
 fi
 
 # Make sure destination has enough space
@@ -141,41 +177,24 @@ DEST_FREE=`df -kP "$DEST_PATH" |grep "/" |awk '{print $4}'`
 DEST_FREE_H=`df -kPh "$DEST_PATH" |grep "/" |awk '{print $4}'`
 if [ "$DEST_FREE" -lt "$SOURCE_SIZE" ]
 then
-	errormessage="$SPACE_ERRORLEVEL: $DEST_FREE_H free diskspcace on $DEST_PATH. Total source size $SOURCE_HUMANSIZE."
-	echo "$errormessage"
-    echo `date "+%Y-%m-%d %H:%M:%S"` "$errormessage" >> $LOGFILE
-    if [ -n "$ERROR_MAIL" ]
-    then
-    	echo "$errormessage" | $MAILCOMMAND "$ERROR_SUBJECT" "$ERROR_MAIL"
-    fi
+	errormessage="Free space on $DEST_PATH is $DEST_FREE_H. Total source size $SOURCE_HUMANSIZE."
 	if [ "$SPACE_ERRORLEVEL" = "ERROR" ]
 	then
-		echo "                    Backup ABORTED" >> $LOGFILE
-		exit	
+		errorexit "$errormessage" mail
+	else
+		mailer "WARNING: Insufficient diskspace for snapshotbackup" "$errormessage"
 	fi
 fi
-
 
 RUNFILE="SNAPSHOTBACKUP_IS_RUNNING"
 
-
 if [ -f "$DEST_PATH/$RUNFILE" ];
 then
-	errormessage="ERROR: Backup is currently running, start time $(cat $DEST_PATH/$RUNFILE)"
-	echo "$errormessage"
-	echo `date "+%Y-%m-%d %H:%M:%S"` "$errormessage $DEST_PATH" >> $LOGFILE
-	if [ -n "$ERROR_MAIL" ]
-	then
-		echo "$errormessage" | $MAILCOMMAND "$ERROR_SUBJECT" "$ERROR_MAIL"
-	fi
-	echo "                    Backup ABORTED" >> $LOGFILE
-	exit
+	errormessage="Backup is currently running, start time $(cat $DEST_PATH/$RUNFILE). Runfile is $DEST_PATH/$RUNFILE"
+	errorexit "$errormessage" mail
 else
 	echo `date "+%Y-%m-%d %H:%M:%S"` > $DEST_PATH/$RUNFILE
 fi
-
-## Get source size (1.2 doesn't work with pull)
-#source_size=`du -sch $SOURCE_PATHS`
 
 let backup_zerocount=SNAPSHOT_COUNT-1
 
@@ -199,9 +218,9 @@ fi
 
 # Dir check done, start main tasks
 echo -e "Backup started\nSOURCES:$SOURCE_PATHS\nDESTINATION:$DEST_PATH\n$SNAPSHOT_COUNT versions kept"
-echo `date "+%Y-%m-%d %H:%M:%S"` "Backup STARTED to $DEST_PATH keeping $SNAPSHOT_COUNT snapshots" >> $LOGFILE
-echo "                    Sources: $SOURCE_PATHS" >> $LOGFILE
-echo "                    Total source size: $SOURCE_HUMANSIZE, Space on destination: $DEST_FREE_H"  >> $LOGFILE
+writelog "Backup STARTED to $DEST_PATH keeping $SNAPSHOT_COUNT snapshots" 
+writelog "Sources: $SOURCE_PATHS" notime
+writelog "Total source size: $SOURCE_HUMANSIZE, Space on destination: $DEST_FREE_H" notime
 if [ "$BACKUP_PERMISSIONS" = "yes" ]
 then
 	echo "Permissions will be saved to backup_permissions.acl"
@@ -217,20 +236,26 @@ do
 	mv $DEST_PATH/snapshot.$PREV $DEST_PATH/snapshot.$i
 done
 
-
 # Rsync source to snapshot.0, creating hardlinks 
-echo "rsync $RSYNC_ARGS --delete --link-dest=../snapshot.1 $SOURCE_PATHS  $DEST_PATH/snapshot.0/"
-echo `date "+%Y-%m-%d %H:%M:%S"` "rsync $RSYNC_ARGS --delete --link-dest=../snapshot.1 $SOURCE_PATHS  $DEST_PATH/snapshot.0/"
+#echo "rsync $RSYNC_ARGS --delete --link-dest=../snapshot.1 $SOURCE_PATHS  $DEST_PATH/snapshot.0/"
+#
 eval rsync $RSYNC_ARGS --delete --link-dest=../snapshot.1 $SOURCE_PATHS  $DEST_PATH/snapshot.0/ 
 
 
+# Count updated files
+FILE_COUNT=`find "$DEST_PATH"/snapshot.0/* -type f -newer "$DEST_PATH"/snapshot.1 -exec ls {} \; | wc -l`
 # Write info
-echo "Backup started at $started" > $DEST_PATH/snapshot.0/$INFO_FILE
-echo "Backup completed at " `date "+%Y-%m-%d %H:%M:%S"` >> $DEST_PATH/snapshot.0/$INFO_FILE
-echo "Backup sources: $SOURCE_PATHS" >> $DEST_PATH/snapshot.0/$INFO_FILE
-echo "Total size of sources: $SOURCE_HUMANSIZE, space on destination: $DEST_FREE_H" >> $DEST_PATH/snapshot.0/$INFO_FILE
-#echo "Size of source dirs:" >> $DEST_PATH/snapshot.0/$INFO_FILE
-#echo $source_size >> $DEST_PATH/snapshot.0/$INFO_FILE
+echo "Backup started at $started
+Backup completed at $(date "+%Y-%m-%d %H:%M:%S")
+Backup sources: $SOURCE_PATHS
+Total size of sources: $SOURCE_HUMANSIZE, space on destination: $DEST_FREE_H
+$FILE_COUNT files updated since last snapshot" > $DEST_PATH/snapshot.0/$INFO_FILE
+
+if [ "$SHOW_CHANGED_DIRS" = "yes" ]
+then
+	CHANGED_DIRS=`find "$DEST_PATH"/snapshot.0/* -type d -newer "$DEST_PATH"/snapshot.1 -exec ls -d1 {} \;`
+	echo -e "\nUpdated files found in the following directories:\n\n$CHANGED_DIRS" >> $DEST_PATH/snapshot.0/$INFO_FILE
+fi
 
 # Delete runfile
 rm $DEST_PATH/$RUNFILE
@@ -238,7 +263,7 @@ rm $DEST_PATH/$RUNFILE
 # Get and set correct timestamps from $INFO_FILE. 
 for ((i=0;i<=backup_zerocount;i++)) 
 do
-       	if [ -e "$DEST_PATH/snapshot.$i/$INFO_FILE" ]
+	if [ -e "$DEST_PATH/snapshot.$i/$INFO_FILE" ]
 	then
 		touch -r "$DEST_PATH/snapshot.$i/$INFO_FILE" "$DEST_PATH/snapshot.$i"
 	fi
@@ -253,4 +278,13 @@ then
 fi
 
 echo "Backup completed."
-echo `date "+%Y-%m-%d %H:%M:%S"` "Backup to $DEST_PATH COMPLETED" >> $LOGFILE
+writelog "Backup to $DEST_PATH COMPLETED $FILE_COUNT files updated."
+
+if [ "$MAIL_ON_COMPLETE" = "yes" ]
+then
+	completed_info=`cat $DEST_PATH/snapshot.0/$INFO_FILE`
+	mailer "SnapshotBackup to $DEST_PATH completed on" "$completed_info"
+fi
+
+
+
