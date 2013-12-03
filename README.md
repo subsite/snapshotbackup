@@ -28,7 +28,19 @@ SnapshotBackup is released under GPL v3. Copyright Fredrik Welander 2013
 
 **Syntax:**
 
-    snapshotbackup.bash [--snapshots NUMBER] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
+    snapshotbackup.bash [OPTIONS] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
+    
+**Options:**
+
+-s, --snapshots *NUMBER*  
+- Number of snapshots to keep 
+
+-r, --rsync-args *ARGUMENTS*  
+- Arguments to rsync (without dash prefix!)
+- eg. ```-r rlptD```
+
+-m, --mail-on-complete  
+- Send an email on backup completion
     
 **Installation:** 
 
@@ -70,17 +82,19 @@ Optional step, if you want error reporting and don't want to put your email into
 
 **Examples**
 
-*Make snapshots of three directories keeping the default number of copies (SNAPSHOT_COUNT in conf section):*
+*Make snapshots of three directories keeping using default configuration (no options):*
 
     snapshotbackup.bash backup@client:/etc backup@client:/home/user /mnt/backup_drive/mybackup
 
-*Make snapshots of local /var/www keeping 30 copies:*
+*Make snapshots of local /var/www keeping 30 copies using special rsync args and sending mail on completion:*
 
-    snapshotbackup.bash --snapshots 30 /var/www /var/www_backup
+    snapshotbackup.bash -s 30 -r rlptD -m  /var/www /var/www_backup
+    # And the same using long options:
+    snapshotbackup.bash --snapshots 30 --rsync-args rlptD --mail-on-complete  /var/www /var/www_backup
 
 *Sample pull backup in /etc/cron.d*
 
-    30 1 * * * root /usr/local/sbin/snapshotbackup.bash --snapshots 14 backup@client:/etc backup@client:/home/user /mnt/backup_drive/client/daily
+    30 1 * * * root /usr/local/sbin/snapshotbackup.bash -s 14 -m backup@client:/etc backup@client:/home/user /mnt/backup_drive/client/daily
 
 *Homepage of the author: http://www.subsite.fi/pages/in-english/subsite.php*
 
