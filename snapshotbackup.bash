@@ -24,11 +24,12 @@
 # More info in README.md
 #
 # Syntax:
-# snapshotbackup.bash [--snapshots NUMBER] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
+# snapshotbackup.bash [--snapshots NUMBER] [--rsync-args ARGS] [--mail-on-complete] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
 #
 # ------- CONF SECTION --------
 #
-# Default number of snapshots kept when run without --snapshots argument.
+# Default number of snapshots kept when run  
+# Override with --snapshots NUMBER (-s NUMBER) argument
 #
 SNAPSHOT_COUNT=10
 
@@ -44,6 +45,7 @@ MAILCOMMAND='/usr/bin/mail -s'
 ERROR_SUBJECT="Error in snapshotbackup"
 
 # Send email when backup completes "yes" or "no"
+# Override with --mail-on-complete (-m) argument
 #
 MAIL_ON_COMPLETE="yes"
 
@@ -57,6 +59,7 @@ SHOW_CHANGED_DIRS="yes"
 
 # Arguments to rsync 
 # -a equals -rlptgoD. 
+# Override with --rsync-args ARGS (-r ARGS) argument (arguments without dash here, eg. --rsync-args rlptD
 #
 RSYNC_ARGS="-a"
 
@@ -120,25 +123,37 @@ function errorexit () {
 # Check basic syntax
 if [ $# -lt 2 ]
 then
-	echo "USAGE: snapshotbackup.bash [--snapshots NUMBER] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH"
+	echo "USAGE: snapshotbackup.bash [--snapshots NUMBER] [--rsync-args ARGS] [--mail-on-complete] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH"
 	exit
 fi
 
 started=`date "+%Y-%m-%d %H:%M:%S"`
 writelog "LAUNCH" 
 
-# Check arguments
-first_patharg=1
-if [ "$1" = "--snapshots" ]
-then
-	SNAPSHOT_COUNT=$2
-	first_patharg=3
-fi
+# Check and shift arguments
+for arg in $@
+do
+	if [ "${arg:0:1}" = "-" ] ; then
+		if [ "$1" = "--snapshots" ] || [ "$1" = "-s" ]; then
+			SNAPSHOT_COUNT=$2
+			shift
+			shift
+		elif [ "$1" = "--rsync-args" ] || [ "$1" = "-r" ]; then
+			RSYNC_ARGS="-$2"
+			shift
+			shift
+		elif [ "$1" = "--mail-on-complete" ] || [ "$1" = "-m" ]; then
+			MAIL_ON_COMPLETE="yes" 
+			shift	 	
+		fi
+	fi
+done
 
-# Get source paths from arguments
+
+# Get source paths from the arguments that are left
 SOURCE_PATHS=""
 SOURCE_SIZE="0"
-for current_dir in "${@:first_patharg:$# - first_patharg}"
+for current_dir in "${@:1:$# - 1}"
 do
 	remote_prefix=""
 	current_dir=${current_dir%/} # Strip tailing slash
