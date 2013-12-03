@@ -45,9 +45,9 @@ MAILCOMMAND='/usr/bin/mail -s'
 ERROR_SUBJECT="Error in snapshotbackup"
 
 # Send email when backup completes "yes" or "no"
-# Override with --mail-on-complete (-m) argument
+# Override (set to yes) with --mail-on-complete (-m) argument
 #
-MAIL_ON_COMPLETE="yes"
+MAIL_ON_COMPLETE="no"
 
 # Name of small info file created in DEST_PATH after completed backup
 #
