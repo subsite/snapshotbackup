@@ -24,7 +24,18 @@
 # More info in README.md
 #
 # Syntax:
-# snapshotbackup.bash [--snapshots NUMBER] [--rsync-args ARGS] [--mail-on-complete] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
+# snapshotbackup.bash [OPTIONS] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
+#
+# Options:
+#
+# -s, --snapshots NUMBER
+#	Number of snapshots to keep
+# -r, --rsync-args ARGUMENTS
+#	Arguments to rsync (without dash prefix!) e.g. -r rlptD
+# -m, --mail-on-complete
+#	Send an email on backup completion
+# -p, --permissions
+#	Backup permissions separately with getfacl
 #
 # ------- CONF SECTION --------
 #
@@ -123,7 +134,7 @@ function errorexit () {
 # Check basic syntax
 if [ $# -lt 2 ]
 then
-	echo "USAGE: snapshotbackup.bash [--snapshots NUMBER] [--rsync-args ARGS] [--mail-on-complete] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH"
+	echo "USAGE: snapshotbackup.bash [OPTIONS] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH"
 	exit
 fi
 
@@ -144,7 +155,10 @@ do
 			shift
 		elif [ "$1" = "--mail-on-complete" ] || [ "$1" = "-m" ]; then
 			MAIL_ON_COMPLETE="yes" 
-			shift	 	
+			shift
+                elif [ "$1" = "--permissions" ] || [ "$1" = "-p" ]; then
+                        BACKUP_PERMISSIONS="yes"
+                        shift
 		fi
 	fi
 done
