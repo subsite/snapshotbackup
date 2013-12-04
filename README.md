@@ -41,6 +41,9 @@ SnapshotBackup is released under GPL v3. Copyright Fredrik Welander 2013
 
 -m, --mail-on-complete  
 - Send an email on backup completion
+
+-p, --permissions
+- Backup permissions separately with getfacl
     
 **Installation:** 
 
