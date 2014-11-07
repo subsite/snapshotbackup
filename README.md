@@ -78,10 +78,9 @@ Optional step, if you want error reporting and don't want to put your email into
 
 
 **Sample pull backup setup:**
-- Create a dedicated backup user or set a password for user 'backup' if it already exists. You can use a long randomly generated password and forget it after uploading the key. 
-- Make sure the backup user can log in using ssh key authentication (do ssh-keygen, ssh-copy-id backup@client, etc).
-- You might need to ssh-keygen for root@server and ssh-copy-id to backup@client as well.
-- Set up the backup command to run in cron (as root).
+- On client: Create a dedicated backup user or set a password for user 'backup' if it already exists. You can use a long randomly generated password and forget it after uploading the key. Note: the existing backup user doesn't have a shell on all systems, so if ssh throws "This account is currently not available", you need to create the shell with `[root@client]:# chsh -s /bin/bash backup`
+- On server: Make sure the backup user can log in using ssh key authentication (do ssh-keygen, ssh-copy-id backup@client, etc). You might need to ssh-keygen for root@server and ssh-copy-id to backup@client as well.
+- On server: Set up the backup command to run in cron (as root).
 
 **Examples**
 
