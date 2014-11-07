@@ -182,6 +182,13 @@ do
 		SOURCE_PATHS="$SOURCE_PATHS $current_dir"
 		remote_host=${current_dir%:*}
 		current_path=${current_dir#*:}
+		# test connection and existence of remote dir
+		if ! ssh -o BatchMode=yes ${remote_host} test -d "$current_path" 
+		then
+			errormessage="ssh connection or remote directory bogus in $current_dir."
+        		errorexit "$errormessage" mail
+			echo "errorexit"
+		fi
 		# calculate current source size
 		cur_size=`ssh $remote_host du -sk "$current_path" 2>/dev/null |awk '{print $1}'`
 		echo "Source \"$current_dir\" is remote"
@@ -247,7 +254,7 @@ let backup_zerocount=SNAPSHOT_COUNT-1
 backup_dircount=`ls -1 $DEST_PATH | grep "snapshot." | wc -l`
 
 # Create snapshot dirs if needed
-if [ $backup_dircount -lt $backup_zerocount ]
+if [ $backup_dircount -lt $SNAPSHOT_COUNT ]
 then
 	for ((i=0;i<=backup_zerocount;i++)) 
 	do
