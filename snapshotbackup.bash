@@ -26,6 +26,9 @@
 # Syntax:
 # snapshotbackup.bash [OPTIONS] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
 #
+# Optional syntax for sending test email:
+# snapshotbackup.bash -m
+#
 # Options:
 #
 # -s, --snapshots NUMBER
@@ -33,7 +36,7 @@
 # -r, --rsync-args ARGUMENTS
 #	Arguments to rsync (without dash prefix!) e.g. -r rlptD
 # -m, --mail-on-complete
-#	Send an email on backup completion
+#	Send an email on backup completion. Sends test email if used without other arguments.
 # -p, --permissions
 #	Backup permissions separately with getfacl
 #
@@ -134,7 +137,13 @@ function errorexit () {
 # Check basic syntax
 if [ $# -lt 2 ]
 then
-	echo "USAGE: snapshotbackup.bash [OPTIONS] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH"
+	if [ "$1" = "-m" ]
+	then
+		mailer "SnapshotBackup test mail" "Testing mail SnapshotBackup mailer."
+		echo "Sent test email to $ERROR_MAIL."
+	else
+		echo "USAGE: snapshotbackup.bash [OPTIONS] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH"
+	fi
 	exit
 fi
 
@@ -156,9 +165,9 @@ do
 		elif [ "$1" = "--mail-on-complete" ] || [ "$1" = "-m" ]; then
 			MAIL_ON_COMPLETE="yes" 
 			shift
-                elif [ "$1" = "--permissions" ] || [ "$1" = "-p" ]; then
-                        BACKUP_PERMISSIONS="yes"
-                        shift
+        elif [ "$1" = "--permissions" ] || [ "$1" = "-p" ]; then
+            BACKUP_PERMISSIONS="yes"
+            shift
 		fi
 	fi
 done
