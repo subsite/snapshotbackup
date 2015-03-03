@@ -30,6 +30,9 @@ SnapshotBackup is released under GPL v3. Copyright Fredrik Welander 2013
 
     snapshotbackup.bash [OPTIONS] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
     
+    # Send test email message and exit:
+    snapshotbackup.bash -m
+    
 **Options:**
 
 -s, --snapshots *NUMBER*  
@@ -40,26 +43,43 @@ SnapshotBackup is released under GPL v3. Copyright Fredrik Welander 2013
 - eg. ```-r rlptD```
 
 -m, --mail-on-complete  
-- Send an email on backup completion
+- Send an email on backup completion. Sends test message to ERROR_MAIL if used without other arguments.
 
 -p, --permissions
 - Backup permissions separately with getfacl
     
-**Installation:** 
+**Installation:**
 
+    # Install dependencies (only rsync is mandatory for basic use)
+    sudo apt-get install rsync mailutils acl sshfs
+    
+    # Download the script:
     cd /usr/local/sbin
     sudo wget https://raw.github.com/subsite/snapshotbackup/master/snapshotbackup.bash
+    
+    # Make executable:
     sudo chmod 755 snapshotbackup.bash
     
-Optional step, if you want error reporting and don't want to put your email into the script file:
+Optional step, if you want error reporting and don't want to put your email into the script file. Requires mail.mailutils:
     
+    # Create a file containing your email address:
     sudo echo "your.email@mailprovider.com" > /etc/scriptmail.txt
+    
+    # Send a test message with:
+    snapshotbackup.bash -m
+    
+Test your new installation, for example like this:
+    
+    snapshotbackup.bash -m ~/Documents /tmp/backup_test
+
+You should now have a bunch of snapshot-directories under `/tmp/backup_test` (`/tmp/backup_test/snapshot.0` containing your Documents-directory and the info file), and you should have received an email about the completed backup.
+
 
 **Dependencies (standard shell commands not listed):**
-- rsync
-- sshfs (if you neeed push backup)
-- /usr/bin/mail (if you want error reporting by mail)
-- getfacl (if you need to backup permissions separately)
+- rsync 
+- /usr/bin/mail (If you want error reporting by mail. Part of package mailutils. Recommended.)
+- getfacl (If you need to backup permissions separately. Part of package acl.)
+- sshfs (If you need to locally mount remote sources or destination. Not recommended.)
 
 **Notes:**
 - Run script as root to preserve file ownership and avoid permission errors, but protect your backup drive.
