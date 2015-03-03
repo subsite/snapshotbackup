@@ -17,7 +17,7 @@ SnapshotBackup is released under GPL v3. Copyright Fredrik Welander 2013
 - Changes are backed up in time freezed snapshots using rsync and cp
 - Only changes are backed up which saves both diskspace and bandwidth
 - Runs in cron, so you can schedule your backups any way you like
-- Works with both local and remote sources
+- Works with both local and remote sources 
 - The number of kept snapshots is freely configurable
 - Has (optional) error reporting via email, reported errors include missing destination, backup already running and insufficient diskspace
 - Keeps its own logfile and also saves a more detailed info file for each snapshot
@@ -48,7 +48,7 @@ SnapshotBackup is released under GPL v3. Copyright Fredrik Welander 2013
 **Installation:** 
 
     cd /usr/local/sbin
-    sudo wget https://raw.github.com/fredrikwelander/snapshotbackup/master/snapshotbackup.bash
+    sudo wget https://raw.github.com/subsite/snapshotbackup/master/snapshotbackup.bash
     sudo chmod 755 snapshotbackup.bash
     
 Optional step, if you want error reporting and don't want to put your email into the script file:
@@ -67,15 +67,15 @@ Optional step, if you want error reporting and don't want to put your email into
 - Source paths can be remote (user@client:/dir/dir) or local, but you cannot mix. All sources must be on the same host.
 - Destination path must be on a locally mounted device.
 - Backup destination must be a Linux type filesystem for the hardlinks to work, forget FAT/NTFS drives.
-- SSHFS-mounts can be slow.
+- For best results with Windows clients, install [Cygwin](https://www.cygwin.com/) with ssh on the client and use as a normal remote source.
+- A locally mounted SSHFS/SMB/NFS source works technically, of course, but can be slow and/or unreliable. Remote (rsync) sources are recommended.
 - SnapshotBackup has limited error handling. Killing a running script might make a mess.
 
 **Security:**
 - Make sure the backups are protected even if your main user account is compromised, restrict sudo access and use unique passwords for sudoers.
-- Pull backup is recommended for security, push backup (with the destination sshfs-mounted) will make your backups available *and writable* if someone or some malware gets access to your client host. 
+- Pull backup is recommended for security, push backup (with the destination sshfs-mounted) will make your backups available *and writable* if some person or malware gets access to your computer.
 - Consider chmod 700 on the backup destination directory. This will make restoring a bit less smooth, but will keep the backups hidden from anybody without root access on the server.
 - You could enable root login on your client sshd and use root@client:/source/path to get all read-only files (like private keys, /etc/shadow and such) but I find this unnecessary and risky, especially if the backup drive is unencrypted.
-
 
 **Sample pull backup setup:**
 - On client: Create a dedicated backup user or set a password for user 'backup' if it already exists. You can use a long randomly generated password and forget it after uploading the key. Note: the existing backup user doesn't have a shell on all systems, so if ssh throws "This account is currently not available", you need to create the shell with `[root@client]:# chsh -s /bin/bash backup`
@@ -84,11 +84,11 @@ Optional step, if you want error reporting and don't want to put your email into
 
 **Examples**
 
-*Make snapshots of three directories keeping using default configuration (no options):*
+*Make snapshots of three directories using default configuration (no options):*
 
     snapshotbackup.bash backup@client:/etc backup@client:/home/user /mnt/backup_drive/mybackup
 
-*Make snapshots of local /var/www keeping 30 copies using special rsync args and sending mail on completion:*
+*Make snapshots of local /var/www keeping 30 copies using special rsync args and send mail on completion:*
 
     snapshotbackup.bash -s 30 -r rlptD -m  /var/www /var/www_backup
     # And the same using long options:
