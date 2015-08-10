@@ -180,12 +180,15 @@ for current_dir in "${@:1:$# - 1}"
 do
 	remote_prefix=""
 	current_dir=${current_dir%/} # Strip tailing slash
-	current_dir=${current_dir// /'\ '} # Escape spaces in path
-	if [ -d "$current_dir" ]
+	current_dir_local=$current_dir # Keep spaces in local paths
+	current_dir=${current_dir// /'\ '} # Escape spaces in remote paths
+	
+	if [ -d "${current_dir_local}" ]
 	then
 		# calculate current source size
-		cur_size=`du -sk "$current_dir" 2>/dev/null |awk '{print $1}'`
+		cur_size=`du -sk "$current_dir_local" 2>/dev/null |awk '{print $1}'`
 		SOURCE_PATHS="$SOURCE_PATHS $current_dir"
+		echo "Source \"$current_dir\" is local"
 	elif [[ "$current_dir" == *\:* ]]
 	then
 		SOURCE_PATHS="$SOURCE_PATHS $current_dir"
@@ -208,6 +211,12 @@ do
 	# calculate total source size
 	SOURCE_SIZE=`echo $SOURCE_SIZE + $cur_size | bc`		
 done
+
+if [ "$SOURCE_PATHS" == "" ]
+then
+	errorexit "No usable source paths"
+fi
+
 
 # make total source size human readable
 SOURCE_HUMANSIZE="${SOURCE_SIZE}K"
