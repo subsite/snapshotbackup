@@ -50,7 +50,7 @@ SnapshotBackup is released under GPL v3. Copyright Fredrik Welander 2013
     
 **Installation:**
 
-    # Install dependencies (only rsync is mandatory for basic use)
+    # Install dependencies (only rsync is required for basic use)
     sudo apt-get install rsync mailutils acl sshfs
     
     # Clone the script:
