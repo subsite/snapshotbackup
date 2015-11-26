@@ -54,7 +54,7 @@ SnapshotBackup is released under GPL v3. Copyright Fredrik Welander 2013
     sudo apt-get install rsync mailutils acl sshfs
     
     # Clone the script:
-    git clone git@github.com:subsite/snapshotbackup.git
+    git clone https://github.com/subsite/snapshotbackup.git
     
     # Symlink to executable path, for instance:
     sudo ln -s ~/snapshotbackup/snapshotbackup.bash /usr/local/sbin/snapshotbackup.bash
