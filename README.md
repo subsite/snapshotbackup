@@ -53,12 +53,11 @@ SnapshotBackup is released under GPL v3. Copyright Fredrik Welander 2013
     # Install dependencies (only rsync is mandatory for basic use)
     sudo apt-get install rsync mailutils acl sshfs
     
-    # Download the script:
-    cd /usr/local/sbin
-    sudo wget https://raw.github.com/subsite/snapshotbackup/master/snapshotbackup.bash
+    # Clone the script:
+    git clone git@github.com:subsite/snapshotbackup.git
     
-    # Make executable:
-    sudo chmod 755 snapshotbackup.bash
+    # Symlink to executable path, for instance:
+    sudo ln -s ~/snapshotbackup/snapshotbackup.bash /usr/local/sbin/snapshotbackup.bash
     
 Optional step, if you want error reporting and don't want to put your email into the script file. Requires mail.mailutils:
     
