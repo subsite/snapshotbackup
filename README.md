@@ -117,6 +117,6 @@ You should now have a bunch of snapshot-directories under `/tmp/backup_test` (`/
 
     30 1 * * * root /usr/local/sbin/snapshotbackup.bash -s 14 -m backup@client:/etc backup@client:/home/user /mnt/backup_drive/client/daily
 
-*Homepage of the author: http://www.subsite.fi/pages/in-english/subsite.php*
+*Homepage of the author: http://www.subsite.fi/#/in-english/subsite*
 
 *Thanks to: http://www.mikerubel.org/computers/rsync_snapshots/*
