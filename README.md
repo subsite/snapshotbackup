@@ -27,12 +27,12 @@ SnapshotBackup is released under GPL v3. Copyright Fredrik Welander 2013
 
 
 **Syntax:**
-
-    snapshotbackup.bash [OPTIONS] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
+```sh
+snapshotbackup.bash [OPTIONS] SOURCE_PATH [SOURCE_PATH ...] DESTINATION_PATH
     
-    # Send test email message and exit:
-    snapshotbackup.bash -m
-    
+# Send test email message and exit:
+snapshotbackup.bash -m
+```     
 **Options:**
 
 -s, --snapshots *NUMBER*  
@@ -49,28 +49,28 @@ SnapshotBackup is released under GPL v3. Copyright Fredrik Welander 2013
 - Backup permissions separately with getfacl
     
 **Installation:**
+```sh
+# Install dependencies (only rsync is required for basic use)
+sudo apt-get install rsync mailutils acl sshfs
 
-    # Install dependencies (only rsync is required for basic use)
-    sudo apt-get install rsync mailutils acl sshfs
-    
-    # Clone the script:
-    git clone https://github.com/subsite/snapshotbackup.git
-    
-    # Symlink to executable path, for instance:
-    sudo ln -s ~/snapshotbackup/snapshotbackup.bash /usr/local/sbin/snapshotbackup.bash
-    
+# Clone the script:
+git clone https://github.com/subsite/snapshotbackup.git
+
+# Symlink to executable path, for instance:
+sudo ln -s ~/snapshotbackup/snapshotbackup.bash /usr/local/sbin/snapshotbackup.bash
+```   
 Optional step, if you want error reporting and don't want to put your email into the script file. Requires mail.mailutils:
-    
-    # Create a file containing your email address:
-    sudo echo "your.email@mailprovider.com" > /etc/scriptmail.txt
-    
-    # Send a test message with:
-    snapshotbackup.bash -m
-    
-Test your new installation, for example like this:
-    
-    snapshotbackup.bash -m ~/Documents /tmp/backup_test
+```sh
+# Create a file containing your email address:
+sudo echo "your.email@mailprovider.com" > /etc/scriptmail.txt
 
+# Send a test message with:
+snapshotbackup.bash -m
+```    
+Test your new installation, for example like this:
+```sh    
+snapshotbackup.bash -m ~/Documents /tmp/backup_test
+```
 You should now have a bunch of snapshot-directories under `/tmp/backup_test` (`/tmp/backup_test/snapshot.0` containing your Documents-directory and the info file), and you should have received an email about the completed backup.
 
 
@@ -104,19 +104,19 @@ You should now have a bunch of snapshot-directories under `/tmp/backup_test` (`/
 **Examples**
 
 *Make snapshots of three directories using default configuration (no options):*
-
-    snapshotbackup.bash backup@client:/etc backup@client:/home/user /mnt/backup_drive/mybackup
-
+```sh
+snapshotbackup.bash backup@client:/etc backup@client:/home/user /mnt/backup_drive/mybackup
+```
 *Make snapshots of local /var/www keeping 30 copies using special rsync args and send mail on completion:*
-
-    snapshotbackup.bash -s 30 -r rlptD -m  /var/www /var/www_backup
-    # And the same using long options:
-    snapshotbackup.bash --snapshots 30 --rsync-args rlptD --mail-on-complete  /var/www /var/www_backup
-
+```sh
+snapshotbackup.bash -s 30 -r rlptD -m  /var/www /var/www_backup
+# And the same using long options:
+snapshotbackup.bash --snapshots 30 --rsync-args rlptD --mail-on-complete  /var/www /var/www_backup
+```
 *Sample pull backup in /etc/cron.d*
-
-    30 1 * * * root /usr/local/sbin/snapshotbackup.bash -s 14 -m backup@client:/etc backup@client:/home/user /mnt/backup_drive/client/daily
-
+```sh
+30 1 * * * root /usr/local/sbin/snapshotbackup.bash -s 14 -m backup@client:/etc backup@client:/home/user /mnt/backup_drive/client/daily
+```
 *Homepage of the author: http://www.subsite.fi/#/in-english/subsite*
 
 *Thanks to: http://www.mikerubel.org/computers/rsync_snapshots/*
