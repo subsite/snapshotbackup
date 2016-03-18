@@ -52,7 +52,7 @@ SNAPSHOT_COUNT=10
 # Depends on mailutils 'mail'
 # 
 # ERROR_MAIL='john.doe@mail.com'
-ERROR_MAIL=`cat /etc/scriptmail.txt`
+ERROR_MAIL="$(cat /etc/scriptmail.txt)"
 
 MAILCOMMAND='/usr/bin/mail -s' 
 
@@ -107,7 +107,7 @@ function writelog () {
 	then
 		echo "                    $1" >> $LOGFILE
 	else
-		echo `date "+%Y-%m-%d %H:%M:%S"` "$1" >> $LOGFILE
+		echo "$(date "+%Y-%m-%d %H:%M:%S")" "$1" >> $LOGFILE
 	fi
 }
 
@@ -116,7 +116,7 @@ function mailer () {
 	# usage: mailer "mailsubject" "mailmessage"
     if [ -n "$ERROR_MAIL" ]
     then
-		HOST=`hostname -f`
+		HOST="$(hostname -f)"
 		echo "$2" | $MAILCOMMAND "$1 $HOST" "$ERROR_MAIL"
     fi
 }
@@ -147,7 +147,7 @@ then
 	exit
 fi
 
-started=`date "+%Y-%m-%d %H:%M:%S"`
+started="$(date "+%Y-%m-%d %H:%M:%S")"
 writelog "LAUNCH" 
 
 # Check and shift arguments
@@ -186,7 +186,7 @@ do
 	if [ -d "${current_dir_local}" ]
 	then
 		# calculate current source size
-		cur_size=`du -sk "$current_dir_local" 2>/dev/null |awk '{print $1}'`
+		cur_size="$(du -sk "$current_dir_local" 2>/dev/null |awk '{print $1}')"
 		SOURCE_PATHS="$SOURCE_PATHS $current_dir"
 		echo "Source \"$current_dir\" is local"
 	elif [[ "$current_dir" == *\:* ]]
@@ -202,14 +202,14 @@ do
 			echo "errorexit"
 		fi
 		# calculate current source size
-		cur_size=`ssh $remote_host du -sk "$current_path" 2>/dev/null |awk '{print $1}'`
+		cur_size="$(ssh $remote_host du -sk "$current_path" 2>/dev/null |awk '{print $1}')"
 		echo "Source \"$current_dir\" is remote"
 	else
 		echo "WARNING: Source directory \"$current_dir\" not found, directory ignored."
 	fi
 	
 	# calculate total source size
-	SOURCE_SIZE=`echo $SOURCE_SIZE + $cur_size | bc`		
+	SOURCE_SIZE="$(echo $SOURCE_SIZE + $cur_size | bc)"		
 done
 
 if [ "$SOURCE_PATHS" == "" ]
@@ -219,13 +219,13 @@ fi
 
 
 # make total source size human readable
-SOURCE_HUMANSIZE="${SOURCE_SIZE}K"
+SOURCE_HUMANSIZE="${SOURCE_SIZE} K"
 if [ "$SOURCE_SIZE" -gt 1048576 ]
 then
-	SOURCE_HUMANSIZE="`echo $SOURCE_SIZE / 1048576 | bc`G"
+	SOURCE_HUMANSIZE="$(echo $SOURCE_SIZE / 1048576 | bc) G"
 elif [ "$SOURCE_SIZE" -gt 1024 ]
 then
-	SOURCE_HUMANSIZE="`echo $SOURCE_SIZE / 1024 | bc`M"
+	SOURCE_HUMANSIZE="$(echo $SOURCE_SIZE / 1024 | bc) M"
 fi
 echo "Total size of sources: $SOURCE_HUMANSIZE"
 
@@ -243,8 +243,8 @@ then
 fi
 
 # Make sure destination has enough space
-DEST_FREE=`df -kP "$DEST_PATH" |grep "/" |awk '{print $4}'`
-DEST_FREE_H=`df -kPh "$DEST_PATH" |grep "/" |awk '{print $4}'`
+DEST_FREE="$(df -kP "$DEST_PATH" |grep "/" |awk '{print $4}')"
+DEST_FREE_H="$(df -kPh "$DEST_PATH" |grep "/" |awk '{print $4}')"
 if [ "$DEST_FREE" -lt "$SOURCE_SIZE" ]
 then
 	errormessage="Free space on $DEST_PATH is $DEST_FREE_H. Total source size $SOURCE_HUMANSIZE."
@@ -263,13 +263,13 @@ then
 	errormessage="Backup is currently running, start time $(cat $DEST_PATH/$RUNFILE). Runfile is $DEST_PATH/$RUNFILE"
 	errorexit "$errormessage" mail
 else
-	echo `date "+%Y-%m-%d %H:%M:%S"` > $DEST_PATH/$RUNFILE
+	echo "$(date "+%Y-%m-%d %H:%M:%S")" > $DEST_PATH/$RUNFILE
 fi
 
 let backup_zerocount=SNAPSHOT_COUNT-1
 
 # Count current snapshot dirs 
-backup_dircount=`ls -1 $DEST_PATH | grep "snapshot." | wc -l`
+backup_dircount="$(ls -1 $DEST_PATH | grep "snapshot." | wc -l)"
 
 # Create snapshot dirs if needed
 if [ $backup_dircount -lt $SNAPSHOT_COUNT ]
@@ -313,7 +313,7 @@ eval rsync $RSYNC_ARGS --delete --link-dest=../snapshot.1 $SOURCE_PATHS  $DEST_P
 
 
 # Count updated files
-FILE_COUNT=`find "$DEST_PATH"/snapshot.0/* -type f -newer "$DEST_PATH"/snapshot.1 -exec ls {} \; | wc -l`
+FILE_COUNT="$(find "$DEST_PATH"/snapshot.0/* -type f -newer "$DEST_PATH"/snapshot.1 -exec ls {} \; | wc -l)"
 # Write info
 echo "Backup started at $started
 Backup completed at $(date "+%Y-%m-%d %H:%M:%S")
@@ -323,7 +323,7 @@ $FILE_COUNT files updated since last snapshot" > $DEST_PATH/snapshot.0/$INFO_FIL
 
 if [ "$SHOW_CHANGED_DIRS" = "yes" ]
 then
-	CHANGED_DIRS=`find "$DEST_PATH"/snapshot.0/* -type d -newer "$DEST_PATH"/snapshot.1 -exec ls -d1 {} \;`
+	CHANGED_DIRS="$(find "$DEST_PATH"/snapshot.0/* -type d -newer "$DEST_PATH"/snapshot.1 -exec ls -d1 {} \;)"
 	echo -e "\nUpdated files found in the following directories:\n\n$CHANGED_DIRS" >> $DEST_PATH/snapshot.0/$INFO_FILE
 fi
 
@@ -352,7 +352,7 @@ writelog "Backup to $DEST_PATH COMPLETED $FILE_COUNT files updated."
 
 if [ "$MAIL_ON_COMPLETE" = "yes" ]
 then
-	completed_info=`cat $DEST_PATH/snapshot.0/$INFO_FILE`
+	completed_info="$(cat $DEST_PATH/snapshot.0/$INFO_FILE)"
 	mailer "SnapshotBackup to $DEST_PATH completed on" "$completed_info"
 fi
 
