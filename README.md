@@ -39,8 +39,9 @@ snapshotbackup.bash -m
 - Number of snapshots to keep 
 
 -r, --rsync-args *ARGUMENTS*  
-- Arguments to rsync (without dash prefix!)
+- Arguments to rsync (without dash prefix!) to override the script default `-a`
 - eg. ```-r rlptD```
+
 
 -m, --mail-on-complete  
 - Send an email on backup completion. Sends test message to ERROR_MAIL if used without other arguments.
