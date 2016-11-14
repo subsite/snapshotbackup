@@ -135,7 +135,7 @@ function mailer () {
 # function to exit on error
 function errorexit () {
 	# usage: errorexit "errormessage" [mail]
-	echo "ERROR $errormessage"
+	echo "ERROR $1"
 	if [ "$2" = "mail" ]
 	then
 		mailer "$ERROR_SUBJECT" "$errormessage"
