@@ -51,12 +51,22 @@ SNAPSHOT_COUNT=10
 # Sends the following errors: "Missing destination", "Backup currently running" and "Diskspace warning".
 # Depends on mailutils 'mail'
 # 
+# Set static addresss
 # ERROR_MAIL='john.doe@mail.com'
-ERROR_MAIL="$(cat /etc/scriptmail.txt)"
+#
+# Read address from file
+# ERROR_MAIL="$(cat /etc/scriptmail.txt)"
+#
+# Instead of email, send messages using Telegram:
+# Telegram needs https://github.com/subsite/misc-scripts/blob/master/telegrambot.py to work
+ERROR_MAIL='telegram'
 
 MAILCOMMAND='/usr/bin/mail -s' 
 
 ERROR_SUBJECT="Error in snapshotbackup"
+
+# Telegrambot execution path 
+TELEGRAMBOT='/usr/local/sbin/telegrambot.py'
 
 # Send email when backup completes "yes" or "no"
 # Override (set to yes) with --mail-on-complete (-m) argument
@@ -111,11 +121,12 @@ function writelog () {
 	fi
 }
 
-# function to send email
+# function to send email or telegram message
 function mailer () {
 	# usage: mailer "mailsubject" "mailmessage"
-    if [ -n "$ERROR_MAIL" ]
-    then
+	if [ "$ERROR_MAIL" = "telegram" ] && [ -f "$TELEGRAMBOT" ]; then
+			$TELEGRAMBOT "*${1}* $2"
+    elif [ -n "$ERROR_MAIL" ]; then
 		HOST="$(hostname -f)"
 		echo "$2" | $MAILCOMMAND "$1 $HOST" "$ERROR_MAIL"
     fi
@@ -171,6 +182,8 @@ do
 		fi
 	fi
 done
+
+
 
 
 # Get source paths from the arguments that are left
