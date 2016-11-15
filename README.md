@@ -39,12 +39,12 @@ snapshotbackup.bash -m
 - Number of snapshots to keep 
 
 -r, --rsync-args *ARGUMENTS*  
-- Arguments to rsync (without dash prefix!) to override the script default `-a`
-- eg. ```-r rlptD```
-
+- Arguments to rsync (without dash prefix!) to override the script default `-a` (equals `-rlptgoD`)
+- Example: `-r rlptD` - do not preserve group or owner
+- Example: `-r aR` - preserve full paths
 
 -m, --mail-on-complete  
-- Send an email on backup completion. Sends test message to ERROR_MAIL if used without other arguments.
+- Send an email or Telegram message on backup completion. Sends test message to ERROR_MAIL if used without other arguments.
 
 -p, --permissions
 - Backup permissions separately with getfacl
