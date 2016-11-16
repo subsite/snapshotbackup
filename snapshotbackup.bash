@@ -125,7 +125,7 @@ function writelog () {
 function mailer () {
 	# usage: mailer "mailsubject" "mailmessage"
 	if [ "$ERROR_MAIL" = "telegram" ] && [ -f "$TELEGRAMBOT" ]; then
-			$TELEGRAMBOT "*${1}* $2"
+			$TELEGRAMBOT "(snapshotbackup) *${1}* $2"
     elif [ -n "$ERROR_MAIL" ]; then
 		HOST="$(hostname -f)"
 		echo "$2" | $MAILCOMMAND "$1 $HOST" "$ERROR_MAIL"
@@ -362,6 +362,11 @@ fi
 
 echo "Backup completed."
 writelog "Backup to $DEST_PATH COMPLETED $FILE_COUNT files updated."
+
+
+# Simple logrotate, remove all but the last 10 000 lines. 
+# This should keep the logfile from growing bigger than around 1 MB
+echo "$(tail -n 10000 $LOGFILE)" > "$LOGFILE"
 
 if [ "$MAIL_ON_COMPLETE" = "yes" ]
 then
