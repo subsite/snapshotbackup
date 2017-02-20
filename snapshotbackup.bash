@@ -82,10 +82,10 @@ INFO_FILE="backup_info.txt"
 SHOW_CHANGED_DIRS="yes"
 
 # Arguments to rsync 
-# -a equals -rlptgoD. 
+# -a equals -rlptgoD.  --protect-args improves handling of filenames with spaces. 
 # Override with --rsync-args ARGS (-r ARGS) argument (arguments without dash here, eg. --rsync-args rlptD
 #
-RSYNC_ARGS="-a"
+RSYNC_ARGS="-a --protect-args"
 
 # Backup permissions to separate file, "yes" or "no". This should not be needed on most systems.
 # This file may be large and will take up space in each snapshot. 
