@@ -105,19 +105,19 @@ You should now have a bunch of snapshot-directories under `/tmp/backup_test` (`/
 **Using reverse tunnels for offsite backups**
 
 Say you have a computer at home (called *src*) and a computer at work (called *dest*) and you want to do offsite backups from *src* (home) to *dst* (work), but both are on a dynamic IP and hidden behind NAT (and ipv6 is not available). Luckily you have an account on a server (called *my.server.foo*) somewhere else, and access to its firewall config. 
-1. On *my.server.foo*: Choose a port for your tunnel, let's say 22222. Set the firewall to allow incoming on this port. It can be as simple as `ufw allow 22222` or as complicated as setting up port forwarding on a separate hardware firewall. 
+1. On *my.server.foo*: Choose a port for your tunnel, let's say 22222. Set the firewall to allow incoming on this port. It can be as simple as `me@my.server.foo:~$ sudo ufw allow 22222` or as complicated as setting up port forwarding on a separate hardware firewall. 
 2. On *src* (the backup source), start the reverse tunnel with     
 `me@src:~$ ssh -f –R 22222:localhost:22 me@my.server.foo`    
 3. On *dest* (the backup destination), test your connection to *src*    
 `me@dest:~$ ssh -p 22222 me@my.server.foo`    
 If everything works, you should now be able to log in to *src* using your credentials on that box.
-4. Time to make the tunnel persinstent on *home*. First kill the tunnel from step 2, it was just for testing. Then install autossh for daemonizing the connection:    
+4. Time to make the tunnel persinstent on *src*. First kill the tunnel from step 2, it was just for testing. Then install autossh for daemonizing the connection:    
 `me@src:~$ apt install autossh`    
 Then enable key-authentication:   
 `me@src:~$ ssh-copy-id me@my.server.foo`  
 Add it to a cron script (every 5 minutes in this example):    
 `*/5 * * * * me /usr/bin/autossh -M 20000 -N -o "ServerAliveInterval 60"  -o "ServerAliveCountMax 3" -R 22222:localhost:22 me@my.server.foo > /dev/null 2>&1`    
-NOTE: The monitor port (-M 20000 in this case, you can use any available port) needs to be unique for every tunnel you run on the same host. Use 20001 for the next one.
+NOTE: The monitor port (-M 20000 in this case, you can use any available port) needs to be unique for every tunnel you run on the same host. Use 20001 or something for the next one.
 
 5. On *dest*, add an entry to `~/.ssh/config` so you won't have to remember the port every time:
 ```
